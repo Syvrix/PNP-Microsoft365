@@ -3,6 +3,8 @@ This repository contains powershell scripts used to facilitate Microsoft 365 tas
 
 Use case scenarios is like making a identical microsoft list or moving it to a new sharepoint site.
 
+Currently this supports
+
 ## Instructions
 ### Requirements
 1. Powershell

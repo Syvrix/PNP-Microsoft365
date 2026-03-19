@@ -1,62 +1,40 @@
-# Install PnP if not installed
-# Install-Module PnP.PowerShell -Scope CurrentUser
+# ==========================
+# CONFIGURATION
+# ==========================
+$sourceSiteUrl  = "https://tenant.sharepoint.com/sites/SourceSite"
+$targetSiteUrl  = "https://tenant.sharepoint.com/sites/TargetSite"
 
-# ---------- CONFIG ----------
-$sourceSite = "https://tenant.sharepoint.com/sites/SourceSite"
-$targetSite = "https://tenant.sharepoint.com/sites/TargetSite"
+$sourceListName = "SourceListName"
+$targetListName = "TargetListName"
 
-$sourceList = "SourceList"
-$targetList = "TargetList"
-# ----------------------------
+$templatePath = ".\ListOnlyTemplate.xml"
 
-# Connect to both sites
-Connect-PnPOnline -Url $sourceSite -Interactive
-$sourceItems = Get-PnPListItem -List $sourceList -PageSize 2000
 
-Connect-PnPOnline -Url $targetSite -Interactive
+# ==========================
+# EXPORT ONLY THE SELECTED LIST
+# ==========================
+Connect-PnPOnline -Url $sourceSiteUrl -Interactive
 
-foreach ($item in $sourceItems) {
-    Write-Host "Processing item ID: $($item.Id)" -ForegroundColor Cyan
+Get-PnPSiteTemplate `
+    -Out $templatePath `
+    -Lists $sourceListName `
+    -Handlers Lists, Fields, ContentTypes, Views, ListSettings `
+    -ExcludeHandlers Navigation, Workflows, Security, Branding
 
-    # 1. Copy all field values except system-internal fields
-    $fieldValues = @{}
-    foreach ($field in $item.FieldValues.Keys) {
-        if ($field -notin @("Id", "Attachments", "FileRef", "FileDirRef",
-                            "Created", "Author", "Modified", "Editor")) {
+Write-Host "List schema exported." -ForegroundColor Green
 
-            $fieldValues[$field] = $item[$field]
-        }
-    }
 
-    # 2. Create the new item
-    $newItem = Add-PnPListItem -List $targetList -Values $fieldValues
+# ==========================
+# IMPORT INTO TARGET SITE
+# ==========================
+Connect-PnPOnline -Url $targetSiteUrl -Interactive
 
-    # 3. Copy attachments
-    if ($item.AttachmentFiles.Count -gt 0) {
-        Write-Host " Copying attachments..."
+Invoke-PnPSiteTemplate -Path $templatePath
 
-        foreach ($att in $item.AttachmentFiles) {
-            $bytes = Get-PnPFile -Url $att.ServerRelativeUrl -AsByteArray
-            Add-PnPAttachment -List $targetList -Identity $newItem.Id -FileName $att.FileName -Content $bytes
-        }
-    }
-
-    # 4. Copy modern comments
-    $comments = Get-PnPListItemComment -List $sourceList -Item $item.Id
-    foreach ($comment in $comments) {
-        Add-PnPListItemComment -List $targetList -Item $newItem.Id -Text $comment.Text | Out-Null
-    }
-
-    # 5. Copy system metadata (Created, Modified, Author, Editor)
-    Set-PnPListItem -List $targetList -Identity $newItem.Id `
-        -Values @{
-            "Created"=$item.FieldValues["Created"];
-            "Author" =$item.FieldValues["Author"];
-            "Modified"=$item.FieldValues["Modified"];
-            "Editor" =$item.FieldValues["Editor"];
-        } -SystemUpdate
-
-    Write-Host " → Item $($item.Id) copied to $($newItem.Id)" -ForegroundColor Green
+# Rename if needed
+if ($sourceListName -ne $targetListName) {
+    $list = Get-PnPList -Identity $sourceListName
+    Set-PnPList -Identity $list -Title $targetListName
 }
 
-Write-Host "DONE!" -ForegroundColor Yellow
+Write-Host "List structure copied successfully!" -ForegroundColor Green

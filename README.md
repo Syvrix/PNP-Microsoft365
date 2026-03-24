@@ -11,6 +11,11 @@ Currently Supports:
 .env file is used for "secrets" located in each folder for the type of scripts.
 Rename .env.example to .env to make it work. (.env is ignored by git and will be lost during push)
 
+### Authorization
+- A client app on azure needs to be setup with read rights.
+- The only configuration that needs to be entered is list names, Sharepoint site name and Client ID.
+- Auhorization will prompt the user to login in a web browser to create a session to access the list.
+
 ### Requirements
 1. Powershell
 2. PackageProvider NuGet

@@ -25,7 +25,7 @@ if (Test-Path $envFile) {
 # ==========================
 # CONFIGURATION
 # ==========================
-$OutputFolder = ".\debug_batches"
+$OutputFolder = ".\list_export"
 
 $sourceList = $SOURCE_LIST
 $sourceSite = $SOURCE_SITE

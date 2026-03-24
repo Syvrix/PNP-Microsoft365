@@ -16,8 +16,8 @@ This repository contains PowerShell scripts for exporting and importing SharePoi
    - `TARGET_LIST`
    - `CLIENT_ID`
 3. Ensure the `.env` file is excluded from source control (it is already ignored by git).
-
-Example `.env` format (See the example file)
+- Example `.env` format (See the example file)
+    - You can encase the enviromental values with quotations("") or without, both is supported.
 
 ## Usage
 ### 1. Export source data

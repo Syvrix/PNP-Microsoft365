@@ -8,6 +8,9 @@ Currently Supports:
 - Exporting Attatchments attatched to the item.
 
 ## Instructions
+.env file is used for "secrets" located in each folder for the type of scripts.
+Rename .env.example to .env to make it work. (.env is ignored by git and will be lost during push)
+
 ### Requirements
 1. Powershell
 2. PackageProvider NuGet

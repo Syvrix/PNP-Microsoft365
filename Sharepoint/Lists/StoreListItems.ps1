@@ -1,15 +1,35 @@
 # Export-SharePointListData.ps1
 # This script exports list items, attachments, comments, and metadata from a SharePoint list to JSON and downloads attachments.
 
+# Load configuration from .env file
+$envFile = ".\.env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^([^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            # Strip surrounding quotes if present
+            if ($value -match '^"(.*)"$') {
+                $value = $matches[1]
+            } elseif ($value -match "^'(.*)'$") {
+                $value = $matches[1]
+            }
+            Set-Variable -Name $key -Value $value
+        }
+    }
+    Write-Host "Configuration loaded from .env file" -ForegroundColor Green
+} else {
+    Write-Warning ".env file not found. Using default values."
+}
 
 # ==========================
 # CONFIGURATION
 # ==========================
 $OutputFolder = ".\debug_batches"
 
-$sourceList = "SourceList"
-$sourceSite = "https://tenant.sharepoint.com/sites/Source"
-$clientId = "00000000-0000-0000-0000-000000000000"  # Replace with your Azure AD app client ID
+$sourceList = $SOURCE_LIST
+$sourceSite = $SOURCE_SITE
+$clientId = $CLIENT_ID
 
 # For testing only: limit number of items exported. Set to 0 for no limit.
 $MaxItems = 0
@@ -17,7 +37,7 @@ $MaxItems = 0
 # Install-Module PnP.PowerShell -Scope CurrentUser if not installed
 
 # Connect to source site
-$connection = Connect-PnPOnline -Url $SourceSiteUrl -Interactive -ReturnConnection -ClientId $clientId
+$connection = Connect-PnPOnline -Url $sourceSite -Interactive -ReturnConnection -ClientId $clientId
 
 # Create output folder if not exists
 if (!(Test-Path -Path $OutputFolder)) {
@@ -41,7 +61,7 @@ $totalProcessed = 0
 # ==========================
 do {
     # Workaround: use ScriptBlock to preserve paging position for large lists.
-    $items = Get-PnPListItem -List $SourceListName -PageSize $pageSize -Includes AttachmentFiles -Connection $connection -ScriptBlock { param($items) $items }
+    $items = Get-PnPListItem -List $sourceList -PageSize $pageSize -Includes AttachmentFiles -Connection $connection -ScriptBlock { param($items) $items }
 
     if (!$items -or $items.Count -eq 0) { break }
 
@@ -85,7 +105,7 @@ do {
     }
 
     # Get comments
-    $comments = Get-PnPListItemComment -List $SourceListName -Identity $item.Id -Connection $connection
+    $comments = Get-PnPListItemComment -List $sourceList -Identity $item.Id -Connection $connection
     $commentData = @()
     foreach ($comment in $comments) {
         $commentData += @{
